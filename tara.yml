@@ -1,0 +1,27 @@
+name: KPSS Bot Pro
+on:
+  push:
+  schedule:
+    - cron: '0 6,11,16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests beautifulsoup4
+      - run: python bot.py
+      - name: Hafizayi Kaydet
+        run: |
+          git config --local user.email "bot@github.com"
+          git config --local user.name "KPSS Bot"
+          git add -A
+          git commit -m "Hafiza guncellendi" || exit 0
+          git push

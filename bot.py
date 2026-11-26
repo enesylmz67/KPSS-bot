@@ -11,7 +11,7 @@ def coz(b64_metin):
     return base64.b64decode(b64_metin).decode("utf-8")
 
 NTFY_URL = coz("aHR0cHM6Ly9udGZ5LnNoL2twc3MtaXN0LTY3OC1vemVs")
-RG_BASE = coz("aHR0cHM6Ly93d3cucmVzbWlnYXpldGUuZ292LnRyL2lsYW5sYXIvZXNraWlsYW5sYXIv")
+RG_BASE = "ht" + "tps" + chr(58) + chr(47) + chr(47) + "www.resmigazete.gov.tr" + chr(47) + "ilanlar" + chr(47) + "eskiilanlar" + chr(47)
 GNEWS_BASE = coz("aHR0cHM6Ly9uZXdzLmdvb2dsZS5jb20vcnNzL3NlYXJjaD9xPQ==")
 KARİYER_URL = coz("aHR0cHM6Ly9pc2VhbGlta2FyaXllcmthcGlzaS5jYmlrby5nb3YudHI=")
 

@@ -6,14 +6,12 @@ import json
 import os
 import hashlib
 
-# --- YAPILANDIRMA ---
 NTFY_KANAL_ADI = "kpss-ist-678-ozel"
 HAFIZA_DOSYASI = "hafiza.json"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
 }
 
-# --- KULLANICI PROFİL KURALLARI ---
 HEDEF_SEHIR = "istanbul"
 EGITIM = ["ortaöğretim", "lise", "p94", "meslek lisesi", "teknik lise"]
 YUKSEK_PUAN_ENGEL = ["en az 70", "en az 75", "en az 80", "70 puan", "75 puan", "80 puan"]
@@ -81,8 +79,9 @@ def ilan_analiz_et(baslik, icerik):
     return {"kategoriler": ", ".join(bulunan_kategoriler), "mesai": mesai}
 
 def bildirim_gonder(baslik, mesaj, link, oncelik="high"):
+    url = "https://ntfy.sh" + NTFY_KANAL_ADI
     requests.post(
-        f"https://ntfy.sh{NTFY_KANAL_ADI}",
+        url,
         data=mesaj.encode("utf-8"),
         headers={
             "Title": baslik,

@@ -6,6 +6,7 @@ import json
 import os
 import hashlib
 
+S = chr(47)
 NTFY_KANAL_ADI = "kpss-ist-678-ozel"
 HAFIZA_DOSYASI = "hafiza.json"
 HEADERS = {
@@ -79,8 +80,7 @@ def ilan_analiz_et(baslik, icerik):
     return {"kategoriler": ", ".join(bulunan_kategoriler), "mesai": mesai}
 
 def bildirim_gonder(baslik, mesaj, link, oncelik="high"):
-    slash = chr(47)
-    hedef_url = "https:" + slash + slash + "ntfy.sh" + slash + NTFY_KANAL_ADI
+    hedef_url = f"https:{S}{S}ntfy.sh{S}{NTFY_KANAL_ADI}"
     requests.post(
         hedef_url,
         data=mesaj.encode("utf-8"),
@@ -94,14 +94,17 @@ def bildirim_gonder(baslik, mesaj, link, oncelik="high"):
     )
 
 def kaynak_resmi_gazete(hafiza, rapor):
-    bugun = datetime.now().strftime("%Y/%m/%d")
-    url = f"https://resmigazete.gov.tr{bugun[:4]}/{bugun[5:7]}/{bugun.replace('/', '')}-4.htm"
+    yil = datetime.now().strftime("%Y")
+    ay = datetime.now().strftime("%m")
+    gun = datetime.now().strftime("%Y%m%d")
+    base = f"https:{S}{S}www.resmigazete.gov.tr{S}ilanlar{S}eskiilanlar{S}{yil}{S}{ay}{S}"
+    url = f"{base}{gun}-4.htm"
     yeni_sayisi = 0
     try:
         r = requests.get(url, headers=HEADERS, timeout=15)
         r.encoding = "utf-8"
         if r.status_code != 200:
-            rapor.append("Resmi Gazete: Bugun henuz yayinlanmadi / Erisilemedi")
+            rapor.append("Resmi Gazete: Bugun henuz yayinlanmadi")
             return 0
         soup = BeautifulSoup(r.text, "html.parser")
         for a in soup.find_all("a", href=True):
@@ -109,7 +112,7 @@ def kaynak_resmi_gazete(hafiza, rapor):
             href = a["href"]
             if len(baslik) < 15:
                 continue
-            tam_link = href if href.startswith("http") else f"https://resmigazete.gov.tr{bugun[:4]}/{bugun[5:7]}/{href}"
+            tam_link = href if href.startswith("http") else f"{base}{href}"
             ilan_id = id_olustur(tam_link)
             if ilan_id in hafiza:
                 continue
@@ -123,7 +126,7 @@ def kaynak_resmi_gazete(hafiza, rapor):
                 bildirim_gonder("ISTANBUL KPSS ILANI (RESMI GAZETE)", mesaj, tam_link)
         rapor.append(f"Resmi Gazete: Aktif ({yeni_sayisi} yeni eslesme)")
     except Exception as e:
-        rapor.append(f"Resmi Gazete: Hata ({str(e)[:30]})")
+        rapor.append(f"Resmi Gazete: Hata ({str(e)[:25]})")
     return yeni_sayisi
 
 def kaynak_google_kamu_xml(hafiza, rapor):
@@ -135,13 +138,13 @@ def kaynak_google_kamu_xml(hafiza, rapor):
     yeni_sayisi = 0
     basarili_sorgu = 0
     for q in sorgular:
-        rss_url = f"https://google.com{q}+when:2d&hl=tr&gl=TR&ceid=TR:tr"
+        rss_url = f"https:{S}{S}://google.com{S}rss{S}search?q={q}+when:2d&hl=tr&gl=TR&ceid=TR:tr"
         try:
             r = requests.get(rss_url, headers=HEADERS, timeout=15)
             if r.status_code == 200:
                 basarili_sorgu += 1
                 root = ET.fromstring(r.content)
-                for item in root.findall(".//item"):
+                for item in root.findall(f".{S}{S}item"):
                     baslik = item.find("title").text or ""
                     link = item.find("link").text or ""
                     aciklama = item.find("description").text or ""
@@ -172,4 +175,4 @@ if __name__ == "__main__":
     zaman = datetime.now().strftime("%d.%m.%Y %H:%M")
     durum_ozeti = "\n".join(rapor_satirlari)
     rapor_mesaji = f"Tarama Zamani: {zaman}\n{durum_ozeti}\nToplam Yeni Bildirim: {toplam_yeni}"
-    bildirim_gonder("KPSS Bot Sistem Raporu", rapor_mesaji, "https://cbiko.gov.tr", oncelik="low")
+    bildirim_gonder("KPSS Bot Sistem Raporu", rapor_mesaji, f"https:{S}{S}isealimkariyerkapisi.cbiko.gov.tr", oncelik="low")

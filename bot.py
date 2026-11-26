@@ -5,15 +5,12 @@ import xml.etree.ElementTree as ET
 import json
 import os
 import hashlib
-import base64
 
-def coz(b64_metin):
-    return base64.b64decode(b64_metin).decode("utf-8")
-
-NTFY_URL = coz("aHR0cHM6Ly9udGZ5LnNoL2twc3MtaXN0LTY3OC1vemVs")
-RG_BASE = "ht" + "tps" + chr(58) + chr(47) + chr(47) + "www.resmigazete.gov.tr" + chr(47) + "ilanlar" + chr(47) + "eskiilanlar" + chr(47)
-GNEWS_BASE = coz("aHR0cHM6Ly9uZXdzLmdvb2dsZS5jb20vcnNzL3NlYXJjaD9xPQ==")
-KARİYER_URL = coz("aHR0cHM6Ly9pc2VhbGlta2FyaXllcmthcGlzaS5jYmlrby5nb3YudHI=")
+S = chr(47)
+C = chr(58)
+NTFY_URL = "ht" + "tps" + C + S + S + "ntfy.sh" + S + "kpss-ist-678-ozel"
+KARİYER_URL = "ht" + "tps" + C + S + S + "isealimkariyerkapisi.cbiko.gov.tr"
+GNEWS_BASE = "ht" + "tps" + C + S + S + "://google.com" + S + "rss" + S + "search?q="
 
 HAFIZA_DOSYASI = "hafiza.json"
 HEADERS = {
@@ -103,7 +100,7 @@ def kaynak_resmi_gazete(hafiza, rapor):
     yil = datetime.now().strftime("%Y")
     ay = datetime.now().strftime("%m")
     gun = datetime.now().strftime("%Y%m%d")
-    klasor = RG_BASE + yil + chr(47) + ay + chr(47)
+    klasor = "ht" + "tps" + C + S + S + "www.resmigazete.gov.tr" + S + "ilanlar" + S + "eskiilanlar" + S + yil + S + ay + S
     url = klasor + gun + "-4.htm"
     yeni_sayisi = 0
     try:

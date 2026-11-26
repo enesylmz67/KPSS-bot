@@ -5,12 +5,19 @@ import xml.etree.ElementTree as ET
 import json
 import os
 import hashlib
+import base64
 
-S = chr(47)
-NTFY_KANAL_ADI = "kpss-ist-678-ozel"
+def coz(b64_metin):
+    return base64.b64decode(b64_metin).decode("utf-8")
+
+NTFY_URL = coz("aHR0cHM6Ly9udGZ5LnNoL2twc3MtaXN0LTY3OC1vemVs")
+RG_BASE = coz("aHR0cHM6Ly93d3cucmVzbWlnYXpldGUuZ292LnRyL2lsYW5sYXIvZXNraWlsYW5sYXIv")
+GNEWS_BASE = coz("aHR0cHM6Ly9uZXdzLmdvb2dsZS5jb20vcnNzL3NlYXJjaD9xPQ==")
+KARİYER_URL = coz("aHR0cHM6Ly9pc2VhbGlta2FyaXllcmthcGlzaS5jYmlrby5nb3YudHI=")
+
 HAFIZA_DOSYASI = "hafiza.json"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15"
 }
 
 HEDEF_SEHIR = "istanbul"
@@ -46,7 +53,7 @@ def id_olustur(metin):
     return hashlib.md5(metin.encode("utf-8")).hexdigest()
 
 def ilan_analiz_et(baslik, icerik):
-    tam_metin = f"{baslik} {icerik}".lower()
+    tam_metin = (baslik + " " + icerik).lower()
     if HEDEF_SEHIR not in tam_metin:
         return None
     if not any(k in tam_metin for k in EGITIM):
@@ -80,9 +87,8 @@ def ilan_analiz_et(baslik, icerik):
     return {"kategoriler": ", ".join(bulunan_kategoriler), "mesai": mesai}
 
 def bildirim_gonder(baslik, mesaj, link, oncelik="high"):
-    hedef_url = f"https:{S}{S}ntfy.sh{S}{NTFY_KANAL_ADI}"
     requests.post(
-        hedef_url,
+        NTFY_URL,
         data=mesaj.encode("utf-8"),
         headers={
             "Title": baslik,
@@ -97,8 +103,8 @@ def kaynak_resmi_gazete(hafiza, rapor):
     yil = datetime.now().strftime("%Y")
     ay = datetime.now().strftime("%m")
     gun = datetime.now().strftime("%Y%m%d")
-    base = f"https:{S}{S}www.resmigazete.gov.tr{S}ilanlar{S}eskiilanlar{S}{yil}{S}{ay}{S}"
-    url = f"{base}{gun}-4.htm"
+    klasor = RG_BASE + yil + chr(47) + ay + chr(47)
+    url = klasor + gun + "-4.htm"
     yeni_sayisi = 0
     try:
         r = requests.get(url, headers=HEADERS, timeout=15)
@@ -112,7 +118,7 @@ def kaynak_resmi_gazete(hafiza, rapor):
             href = a["href"]
             if len(baslik) < 15:
                 continue
-            tam_link = href if href.startswith("http") else f"{base}{href}"
+            tam_link = href if href.startswith("http") else (klasor + href)
             ilan_id = id_olustur(tam_link)
             if ilan_id in hafiza:
                 continue
@@ -122,11 +128,11 @@ def kaynak_resmi_gazete(hafiza, rapor):
             if sonuc:
                 hafiza.append(ilan_id)
                 yeni_sayisi += 1
-                mesaj = f"[Resmi Gazete]\nIlan: {baslik}\nKategori: {sonuc['kategoriler']}\nDurum: {sonuc['mesai']}"
+                mesaj = "[Resmi Gazete]\nIlan: " + baslik + "\nKategori: " + sonuc["kategoriler"] + "\nDurum: " + sonuc["mesai"]
                 bildirim_gonder("ISTANBUL KPSS ILANI (RESMI GAZETE)", mesaj, tam_link)
-        rapor.append(f"Resmi Gazete: Aktif ({yeni_sayisi} yeni eslesme)")
+        rapor.append("Resmi Gazete: Aktif (" + str(yeni_sayisi) + " yeni eslesme)")
     except Exception as e:
-        rapor.append(f"Resmi Gazete: Hata ({str(e)[:25]})")
+        rapor.append("Resmi Gazete: Hata (" + str(e)[:25] + ")")
     return yeni_sayisi
 
 def kaynak_google_kamu_xml(hafiza, rapor):
@@ -138,13 +144,13 @@ def kaynak_google_kamu_xml(hafiza, rapor):
     yeni_sayisi = 0
     basarili_sorgu = 0
     for q in sorgular:
-        rss_url = f"https:{S}{S}://google.com{S}rss{S}search?q={q}+when:2d&hl=tr&gl=TR&ceid=TR:tr"
+        rss_url = GNEWS_BASE + q + "+when:2d&hl=tr&gl=TR&ceid=TR:tr"
         try:
             r = requests.get(rss_url, headers=HEADERS, timeout=15)
             if r.status_code == 200:
                 basarili_sorgu += 1
                 root = ET.fromstring(r.content)
-                for item in root.findall(f".{S}{S}item"):
+                for item in root.iter("item"):
                     baslik = item.find("title").text or ""
                     link = item.find("link").text or ""
                     aciklama = item.find("description").text or ""
@@ -155,11 +161,11 @@ def kaynak_google_kamu_xml(hafiza, rapor):
                     if sonuc:
                         hafiza.append(ilan_id)
                         yeni_sayisi += 1
-                        mesaj = f"[Kamu Portali]\nIlan: {baslik}\nKategori: {sonuc['kategoriler']}\nDurum: {sonuc['mesai']}"
+                        mesaj = "[Kamu Portali]\nIlan: " + baslik + "\nKategori: " + sonuc["kategoriler"] + "\nDurum: " + sonuc["mesai"]
                         bildirim_gonder("ISTANBUL KAMU ILANI YAKALANDI!", mesaj, link)
         except Exception:
             pass
-    rapor.append(f"Kariyer Kapisi/SBB/ISKUR XML: {basarili_sorgu}/3 Akis Aktif ({yeni_sayisi} yeni)")
+    rapor.append("Kariyer Kapisi/SBB/ISKUR XML: " + str(basarili_sorgu) + "/3 Akis Aktif (" + str(yeni_sayisi) + " yeni)")
     return yeni_sayisi
 
 if __name__ == "__main__":
@@ -174,5 +180,5 @@ if __name__ == "__main__":
     
     zaman = datetime.now().strftime("%d.%m.%Y %H:%M")
     durum_ozeti = "\n".join(rapor_satirlari)
-    rapor_mesaji = f"Tarama Zamani: {zaman}\n{durum_ozeti}\nToplam Yeni Bildirim: {toplam_yeni}"
-    bildirim_gonder("KPSS Bot Sistem Raporu", rapor_mesaji, f"https:{S}{S}isealimkariyerkapisi.cbiko.gov.tr", oncelik="low")
+    rapor_mesaji = "Tarama Zamani: " + zaman + "\n" + durum_ozeti + "\nToplam Yeni Bildirim: " + str(toplam_yeni)
+    bildirim_gonder("KPSS Bot Sistem Raporu", rapor_mesaji, KARİYER_URL, oncelik="low")

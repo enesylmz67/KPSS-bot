@@ -79,9 +79,10 @@ def ilan_analiz_et(baslik, icerik):
     return {"kategoriler": ", ".join(bulunan_kategoriler), "mesai": mesai}
 
 def bildirim_gonder(baslik, mesaj, link, oncelik="high"):
-    url = "https://ntfy.sh" + NTFY_KANAL_ADI
+    slash = chr(47)
+    hedef_url = "https:" + slash + slash + "ntfy.sh" + slash + NTFY_KANAL_ADI
     requests.post(
-        url,
+        hedef_url,
         data=mesaj.encode("utf-8"),
         headers={
             "Title": baslik,
